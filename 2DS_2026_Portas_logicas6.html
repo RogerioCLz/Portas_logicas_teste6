@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Gate Quiz - DOOM Slayer Edition</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #05070a, #0b0813);
+            --card-bg: rgba(10, 15, 30, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-color: #ef4444;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #fireCanvas {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            image-rendering: pixelated;
+        }
+
+        .container {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid var(--card-border);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .audio-notice {
+            font-size: 0.75rem;
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.15);
+            padding: 6px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #f87171, #b91c1c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+        }
+
+        .gate-display {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+        }
+
+        .gate-name {
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+        }
+
+        .prompt-text {
+            margin-top: 5px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .inputs-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .select-style {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--card-border);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            text-align: center;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover { transform: translateY(-2px); }
+
+        .feedback {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            display: none;
+        }
+
+        .feedback.correct { background: rgba(34, 197, 94, 0.2); border: 2px solid var(--success-color); color: #4ade80; }
+        .feedback.incorrect { background: rgba(239, 68, 68, 0.2); border: 2px solid var(--error-color); color: #f87171; }
+
+        .score-board { margin-top: 20px; font-size: 1rem; font-weight: 800; }
+        .streak-badge { padding: 4px 12px; border-radius: 6px; background: rgba(255,255,255,0.1); font-family: monospace; }
+
+        /* EASTER EGG: Caveira secreta no canto da tela */
+        #secretSkull {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: none;
+            z-index: 10;
+            animation: float 2s ease-in-out infinite;
+            image-rendering: pixelated;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(5deg); }
+        }
+
+        /* TELA DO MINIJOGO DE TIRO */
+        #fpsStage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #020205;
+            z-index: 100;
+            display: none;
+            cursor: crosshair;
+        }
+
+        #fpsCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .fps-ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ef4444;
+            text-shadow: 2px 2px #000;
+            pointer-events: none;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="fireCanvas"></canvas>
+
+    <canvas id="secretSkull" onclick="startFpsGame()"></canvas>
+
+    <div class="container" id="quizContainer">
+        <div class="audio-notice">Interaja para ativar o som e a música!</div>
+        <h1>Logic Gate Quiz</h1>
+        <p class="subtitle">Descubra as entradas para a saída ser 1</p>
+
+        <div class="gate-display">
+            <div id="gateName" class="gate-name">AND</div>
+            <p class="prompt-text">Quando esta porta resulta em 1?</p>
+        </div>
+
+        <div class="inputs-container">
+            <div class="input-group">
+                <span class="input-label">Entrada A</span>
+                <select id="inputA" class="select-style">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                </select>
+            </div>
+            <div class="input-group" id="inputBGroup">
+                <span class="input-label">Entrada B</span>
+                <select id="inputB" class="select-style">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                </select>
+            </div>
+        </div>
+
+        <button id="btnCheck" class="btn" onclick="checkAnswer()">Confirmar</button>
+        <div id="feedback" class="feedback"></div>
+
+        <div class="score-board">
+            Combo: <span id="score" class="streak-badge">0</span>
+        </div>
+    </div>
+
+    <div id="fpsStage">
+        <div class="fps-ui">
+            DEMÔNIOS ABATIDOS: <span id="fpsScore">0</span><br>
+            <span style="font-size: 0.9rem; color: #94a3b8;">Atire no ALVO na parede para voltar</span>
+        </div>
+        <canvas id="fpsCanvas" onclick="shootWeapon(event)"></canvas>
+    </div>
+
+    <script>
+        // --- Lógica do Quiz ---
+        const gates = ['AND', 'OR', 'XOR', 'NAND', 'NOR', 'XNOR', 'NOT'];
+        let currentGate = '';
+        let score = 0;
+
+        function generateNextGate() {
+            const randomIndex = Math.floor(Math.random() * gates.length);
+            currentGate = gates[randomIndex];
+            document.getElementById('gateName').innerText = currentGate;
+
+            document.getElementById('inputA').value = "0";
+            document.getElementById('inputB').value = "0";
+
+            const inputBGroup = document.getElementById('inputBGroup');
+            if (currentGate === 'NOT') {
+                inputBGroup.style.visibility = 'hidden';
+            } else {
+                inputBGroup.style.visibility = 'visible';
+            }
+
+            document.getElementById('btnCheck').innerText = "Confirmar";
+            document.getElementById('btnCheck').setAttribute("onclick", "checkAnswer()");
+        }
+
+        function checkAnswer() {
+            initAudio();
+            const a = parseInt(document.getElementById('inputA').value);
+            const b = parseInt(document.getElementById('inputB').value);
+            let output = 0;
+
+            switch (currentGate) {
+                case 'AND': output = (a === 1 && b === 1) ? 1 : 0; break;
+                case 'OR':  output = (a === 1 || b === 1) ? 1 : 0; break;
+                case 'XOR': output = (a !== b) ? 1 : 0; break;
+                case 'NAND':output = !(a === 1 && b === 1) ? 1 : 0; break;
+                case 'NOR': output = !(a === 1 || b === 1) ? 1 : 0; break;
+                case 'XNOR':output = (a === b) ? 1 : 0; break;
+                case 'NOT': output = (a === 0) ? 1 : 0; break;
+            }
+
+            const feedbackDiv = document.getElementById('feedback');
+            
+            if (output === 1) {
+                score++;
+                feedbackDiv.className = "feedback correct";
+                feedbackDiv.innerText = "Combinação perfeita!";
+                feedbackDiv.style.display = "block";
+                
+                triggerFireBurst(250); 
+                playCorrectSound();
+                startMusic();
+
+                const btn = document.getElementById('btnCheck');
+                btn.innerText = "Avançar ➔";
+                btn.setAttribute("onclick", "nextRound()");
+            } else {
+                score = 0;
+                feedbackDiv.className = "feedback incorrect";
+                feedbackDiv.innerText = "Combinação incorreta! O fogo apagou.";
+                feedbackDiv.style.display = "block";
+                
+                playIncorrectSound();
+                stopMusic();
+            }
+            
+            document.getElementById('score').innerText = score;
+            updateScoreStyle();
+            checkEasterEggs();
+        }
+
+        function nextRound() {
+            document.getElementById('feedback').style.display = "none";
+            generateNextGate();
+            playSelectSound();
+        }
+
+        function updateScoreStyle() {
+            const badge = document.getElementById('score');
+            if (score >= 20) { badge.style.background = "#fbbf24"; badge.style.color = "#000"; }
+            else if (score >= 10) { badge.style.background = "#06b6d4"; badge.style.color = "#fff"; }
+            else if (score > 0) { badge.style.background = "#ef4444"; badge.style.color = "#fff"; }
+            else { badge.style.background = "rgba(255,255,255,0.1)"; badge.style.color = "#fff"; }
+        }
+
+        function checkEasterEggs() {
+            const skull = document.getElementById('secretSkull');
+            if (score <= 100) {
+                skull.style.display = 'block';
+                drawSkullIcon();
+            } else {
+                skull.style.display = 'none';
+            }
+        }
+
+
+        // --- Áudio Gerado por Código ---
+        let audioCtx = null;
+        let musicInterval = null;
+        let isMusicPlaying = false;
+        let beatIndex = 0;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playCorrectSound() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            [261.63, 392.00, 523.25].forEach((freq, i) => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq + (score * 8), now + i * 0.04);
+                gain.gain.setValueAtTime(0.12, now + i * 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.25);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now + i * 0.04); osc.stop(now + i * 0.04 + 0.25);
+            });
+        }
+
+        function playIncorrectSound() {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(110, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.6);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+        }
+
+        function playSelectSound() {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.type = 'square'; osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.04);
+        }
+
+        function playShotgunSound() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            // Som explosivo (Ruído branco + queda de frequência)
+            let bufferSize = audioCtx.sampleRate * 0.4, buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate), data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            let noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+            let noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.4, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            noise.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+            noise.start(now);
+        }
+
+        const doomRiff = [41.20, 41.20, 82.41, 41.20, 41.20, 73.42, 41.20, 41.20, 65.41, 41.20, 41.20, 61.74, 41.20, 41.20, 58.27, 61.74];
+        function startMusic() {
+            if (isMusicPlaying) clearInterval(musicInterval);
+            isMusicPlaying = true;
+            let tempo = 150 - (Math.min(score, 20) * 3.5); 
+            musicInterval = setInterval(() => {
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                let baseNote = doomRiff[beatIndex % doomRiff.length];
+                if (score >= 20) baseNote *= 3; else if (score >= 10) baseNote *= 2;
+                let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(baseNote, now);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + (tempo / 1000));
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + (tempo / 1000));
+                
+                if (beatIndex % 4 === 0) {
+                    let kOsc = audioCtx.createOscillator(), kGain = audioCtx.createGain();
+                    kOsc.frequency.setValueAtTime(140, now); kOsc.frequency.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    kGain.gain.setValueAtTime(0.2, now); kGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    kOsc.connect(kGain); kGain.connect(audioCtx.destination);
+                    kOsc.start(now); kOsc.stop(now + 0.08);
+                }
+                beatIndex++;
+            }, tempo);
+        }
+
+        function stopMusic() { clearInterval(musicInterval); isMusicPlaying = false; beatIndex = 0; }
+
+
+        // --- Fogo Balatro e Monstros no Background ---
+        const canvas = document.getElementById('fireCanvas');
+        const ctx = canvas.getContext('2d');
+        const PIXEL_SCALE = 5; 
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth / PIXEL_SCALE;
+            canvas.height = window.innerHeight / PIXEL_SCALE;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const particles = [];
+        const backgroundDemons = [];
+
+        class PixelParticle {
+            constructor(isBurst = false) { this.isBurst = isBurst; this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + (this.isBurst ? -Math.random() * 10 : Math.random() * 5);
+                let cs = Math.min(score, 20);
+                if (cs === 0 && !this.isBurst) { this.life = 0; return; }
+                if (cs >= 20) { this.size = Math.floor(Math.random() * 4) + 2; this.speedY = Math.random() * 2.0 + 1.2; this.speedX = Math.random() * 2.0 - 1.0; this.life = Math.random() * 30 + 20; }
+                else if (cs >= 10) { let m = (cs - 9); this.size = Math.floor(Math.random() * 3) + 2; this.speedY = Math.random() * 1.2 + 0.6 + (m * 0.08); this.speedX = Math.random() * 1.6 - 0.8; this.life = Math.random() * 20 + (m * 2); }
+                else { let m = Math.max(cs, 1); this.size = Math.floor(Math.random() * 3) + 1; this.speedY = Math.random() * 1.0 + 0.4 + (m * 0.1); this.speedX = Math.random() * 1.2 - 0.6; this.life = Math.random() * 15 + (m * 2); }
+                if (this.isBurst) { this.speedY *= 1.8; this.speedX *= 1.5; this.life *= 1.3; }
+                this.maxLife = this.life;
+            }
+            update() { this.y -= this.speedY; this.x += this.speedX + Math.sin(this.y * 0.15) * 0.15; this.life--; if (this.life <= 0) { if (this.isBurst) this.life = 0; else this.reset(); } }
+            draw() {
+                if (this.life <= 0) return;
+                let pct = this.life / this.maxLife;
+                let cs = Math.min(score, 20);
+                let color = '#fff';
+                if (cs >= 20) { if (pct > 0.70) color = '#ffffff'; else if (pct > 0.45) color = '#fde047'; else if (pct > 0.20) color = '#f59e0b'; else color = '#b45309'; }
+                else if (cs >= 10) { if (pct > 0.70) color = '#ffffff'; else if (pct > 0.45) color = '#22d3ee'; else if (pct > 0.20) color = '#06b6d4'; else color = '#1d4ed8'; }
+                else { if (pct > 0.65) color = '#fef08a'; else if (pct > 0.40) color = '#f97316'; else if (pct > 0.18) color = '#dc2626'; else color = '#7f1d1d'; }
+                ctx.fillStyle = color; ctx.fillRect(Math.floor(this.x), Math.floor(this.y), this.size, this.size);
+            }
+        }
+
+        // Classe dos Demônios que aparecem no fundo em combo 50+
+        class BackgroundDemon {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 20);
+                this.y = canvas.height;
+                this.speedY = Math.random() * 0.5 + 0.3;
+                this.life = 120;
+            }
+            update() { this.y -= this.speedY; this.life--; }
+            draw() {
+                ctx.fillStyle = '#dc2626'; // Corpo Vermelho
+                ctx.fillRect(Math.floor(this.x), Math.floor(this.y), 12, 12);
+                ctx.fillStyle = '#b91c1c'; // Detalhes/Chifres
+                ctx.fillRect(Math.floor(this.x - 2), Math.floor(this.y - 4), 3, 4);
+                ctx.fillRect(Math.floor(this.x + 11), Math.floor(this.y - 4), 3, 4);
+                ctx.fillStyle = '#fde047'; // Olhos Amarelos
+                ctx.fillRect(Math.floor(this.x + 2), Math.floor(this.y + 3), 2, 2);
+                ctx.fillRect(Math.floor(this.x + 8), Math.floor(this.y + 3), 2, 2);
+            }
+        }
+
+        for (let i = 0; i < 600; i++) particles.push(new PixelParticle(false));
+        function triggerFireBurst(amount) { for (let i = 0; i < amount; i++) particles.push(new PixelParticle(true)); }
+
+        function drawSkullIcon() {
+            const sCanvas = document.getElementById('secretSkull');
+            const sCtx = sCanvas.getContext('2d');
+            sCanvas.width = 45; sCanvas.height = 45;
+            sCtx.fillStyle = '#e2e8f0'; // Cor osso
+            sCtx.fillRect(10, 10, 25, 25);
+            sCtx.fillRect(15, 35, 15, 8);
+            sCtx.fillStyle = '#000'; // Olhos mecânicos vazados
+            sCtx.fillRect(14, 16, 6, 6); sCtx.fillRect(25, 16, 6, 6);
+            sCtx.fillRect(21, 26, 3, 4); // Nariz
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+
+            // Sorteia demônios de fundo se combo for maior que 50
+            if (score >= 50 && Math.random() < 0.015 && backgroundDemons.length < 5) {
+                backgroundDemons.push(new BackgroundDemon());
+            }
+
+            for (let i = backgroundDemons.length - 1; i >= 0; i--) {
+                backgroundDemons[i].update();
+                backgroundDemons[i].draw();
+                if (backgroundDemons[i].life <= 0) backgroundDemons.splice(i, 1);
+            }
+
+            // Remove bursts expirados
+            for (let i = particles.length - 1; i >= 0; i--) {
+                if (particles[i].isBurst && particles[i].life <= 0) particles.splice(i, 1);
+            }
+            requestAnimationFrame(animate);
+        }
+
+
+        // --- MINIJOGO: DOOM TARGET PRACTICE ---
+        const fpsStage = document.getElementById('fpsStage');
+        const fpsCanvas = document.getElementById('fpsCanvas');
+        const fpsCtx = fpsCanvas.getContext('2d');
+        let fpsScore = 0;
+        let isFpsRunning = false;
+        let fpsDemons = [];
+        let flashTicks = 0;
+        let weaponRecoil = 0;
+
+        // Estrutura do Alvo Fixo
+        const targetObj = { x: 100, y: 150, r: 35 };
+
+        class FpsDemon {
+            constructor() {
+                this.w = 50; this.h = 50;
+                this.x = -this.w;
+                this.y = Math.random() * (fpsCanvas.height - 250) + 50;
+                this.speedX = Math.random() * 4 + 2;
+            }
+            update() { this.x += this.speedX; }
+            draw() {
+                // Desenha Demônio Grande Pixelado
+                fpsCtx.fillStyle = '#991b1b';
+                fpsCtx.fillRect(this.x, this.y, this.w, this.h);
+                fpsCtx.fillStyle = '#7f1d1d'; // Chifres
+                fpsCtx.fillRect(this.x - 5, this.y - 10, 10, 15);
+                fpsCtx.fillRect(this.x + this.w - 5, this.y - 10, 10, 15);
+                fpsCtx.fillStyle = '#facc15'; // Olhão maligno centralizado
+                fpsCtx.fillRect(this.x + 15, this.y + 15, 20, 15);
+            }
+        }
+
+        function resizeFpsCanvas() {
+            fpsCanvas.width = window.innerWidth;
+            fpsCanvas.height = window.innerHeight;
+        }
+
+        function startFpsGame() {
+            document.getElementById('quizContainer').style.display = 'none';
+            document.getElementById('secretSkull').style.display = 'none';
+            fpsStage.style.display = 'block';
+            isFpsRunning = true;
+            fpsScore = 0;
+            document.getElementById('fpsScore').innerText = fpsScore;
+            resizeFpsCanvas();
+            fpsDemons = [];
+            animateFps();
+        }
+
+        function stopFpsGame() {
+            isFpsRunning = false;
+            fpsStage.style.display = 'none';
+            document.getElementById('quizContainer').style.display = 'block';
+            document.getElementById('secretSkull').style.display = 'block';
+        }
+
+        function shootWeapon(event) {
+            const rect = fpsCanvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            playShotgunSound();
+            flashTicks = 4; // Ativa clarão do disparo
+            weaponRecoil = 30; // Coice da doze
+
+            // Verifica colisão com o ALVO FIXO para Voltar
+            let distToTarget = Math.hypot(mouseX - targetObj.x, mouseY - targetObj.y);
+            if (distToTarget <= targetObj.r) {
+                stopFpsGame();
+                return;
+            }
+
+            // Verifica colisão com os monstros
+            for (let i = fpsDemons.length - 1; i >= 0; i--) {
+                let d = fpsDemons[i];
+                if (mouseX >= d.x && mouseX <= d.x + d.w && mouseY >= d.y && mouseY <= d.y + d.h) {
+                    fpsDemons.splice(i, 1);
+                    fpsScore++;
+                    document.getElementById('fpsScore').innerText = fpsScore;
+                    break;
+                }
+            }
+        }
+
+        function animateFps() {
+            if (!isFpsRunning) return;
+
+            // Fundo escuro das masmorras
+            fpsCtx.fillStyle = '#0b0c10';
+            fpsCtx.fillRect(0, 0, fpsCanvas.width, fpsCanvas.height);
+
+            // Desenha o ALVO RETRO NA PAREDE
+            fpsCtx.fillStyle = '#dc2626'; fpsCtx.beginPath(); fpsCtx.arc(targetObj.x, targetObj.y, targetObj.r, 0, Math.PI*2); fpsCtx.fill();
+            fpsCtx.fillStyle = '#fff';    fpsCtx.beginPath(); fpsCtx.arc(targetObj.x, targetObj.y, targetObj.r - 12, 0, Math.PI*2); fpsCtx.fill();
+            fpsCtx.fillStyle = '#dc2626'; fpsCtx.beginPath(); fpsCtx.arc(targetObj.x, targetObj.y, targetObj.r - 24, 0, Math.PI*2); fpsCtx.fill();
+
+            // Gerencia aparição de demônios alvos
+            if (Math.random() < 0.02 && fpsDemons.length < 4) {
+                fpsDemons.push(new FpsDemon());
+            }
+
+            // Atualiza e desenha demônios
+            for (let i = fpsDemons.length - 1; i >= 0; i--) {
+                fpsDemons[i].update();
+                fpsDemons[i].draw();
+                if (fpsDemons[i].x > fpsCanvas.width) fpsDemons.splice(i, 1);
+            }
+
+            // Efeito Flash do disparo na tela inteira
+            if (flashTicks > 0) {
+                fpsCtx.fillStyle = `rgba(255, 255, 200, ${flashTicks * 0.15})`;
+                fpsCtx.fillRect(0, 0, fpsCanvas.width, fpsCanvas.height);
+                flashTicks--;
+            }
+
+            // DESENHA A DOZE PIXELADA (ARMA DO JOGADOR)
+            let gunW = 120;
+            let gunH = 240;
+            let gunX = fpsCanvas.width / 2 - gunW / 2;
+            let gunY = fpsCanvas.height - gunH + weaponRecoil;
+
+            if (weaponRecoil > 0) weaponRecoil -= 3; // Recuperação do coice
+
+            fpsCtx.fillStyle = '#374151'; // Cano duplo cinza escuro
+            fpsCtx.fillRect(gunX + 25, gunY, 30, gunH);
+            fpsCtx.fillRect(gunX + 65, gunY, 30, gunH);
+            fpsCtx.fillStyle = '#1f2937'; // Sombra dos canos
+            fpsCtx.fillRect(gunX + 50, gunY, 5, gunH);
+            fpsCtx.fillRect(gunX + 90, gunY, 5, gunH);
+            fpsCtx.fillStyle = '#78350f'; // Coronha de madeira em baixo
+            fpsCtx.fillRect(gunX, gunY + 160, gunW, 80);
+
+            requestAnimationFrame(animateFps);
+        }
+
+        // Inicialização de loops
+        animate();
+        window.onload = generateNextGate;
+    </script>
+</body>
+</html>
